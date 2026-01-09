@@ -1,4 +1,3 @@
-
 import streamlit as st
 from groq import Groq
 
@@ -7,7 +6,8 @@ st.set_page_config(page_title="ERAI - WUG Tutor", page_icon="🎓")
 
 # Masukkan API Key Groq kamu di sini
 # (Saran: Nanti kalau sudah dideploy, gunakan st.secrets untuk keamanan WUG)
-GROQ_API_KEY = st.secrets["Ggsk_SapATkFzEnkbkuGflywsWGdyb3FY2Zw96bL9bOKY0wkoFoXo8ktJ"]
+# HAPUS kode kunci aslimu dari sini, ganti jadi label saja
+GROQ_API_KEY = st.secrets["GROQ_API_KEY"]
 
 client = Groq(api_key=GROQ_API_KEY)
 
