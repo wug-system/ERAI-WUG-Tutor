@@ -1,14 +1,15 @@
 import streamlit as st
 from groq import Groq
+import re
 
 # --- KONFIGURASI HALAMAN ---
 st.set_page_config(page_title="ERAI - WUG Tutor", page_icon="🎓")
 
-# PANGGIL KUNCI DARI RAHASIA (Standard WUG Secure System)
+# PANGGIL KUNCI DARI RAHASIA
 try:
     GROQ_API_KEY = st.secrets["GROQ_API_KEY"]
 except KeyError:
-    st.error("Waduh! API Key 'GROQ_API_KEY' belum diset di Streamlit Secrets.")
+    st.error("API Key 'GROQ_API_KEY' tidak ditemukan di Secrets.")
     st.stop()
 
 client = Groq(api_key=GROQ_API_KEY)
@@ -17,6 +18,14 @@ client = Groq(api_key=GROQ_API_KEY)
 st.title("🤖 ERAI")
 st.caption("WUG Secure System Standard | Tutor Sebaya Interaktif")
 st.divider()
+
+# --- FUNGSI RENDER MATEMATIKA ---
+# Fungsi ini memastikan simbol LaTeX render dengan sempurna di Streamlit
+def render_math_content(text):
+    # Mengubah format \[ ... \] atau \( ... \) menjadi format $ ... $ yang disukai Streamlit
+    clean_text = text.replace(r"\[", "$$").replace(r"\]", "$$")
+    clean_text = clean_text.replace(r"\(", "$").replace(r"\)", "$")
+    return clean_text
 
 # --- INISIALISASI MEMORI ---
 if "messages" not in st.session_state:
@@ -27,37 +36,34 @@ if "user_name" not in st.session_state:
 # --- TAHAP PERKENALAN ---
 if not st.session_state.user_name:
     with st.chat_message("assistant"):
-        st.markdown("Halo! Aku **ERAI**, tutor sebaya kamu. Sebelum kita mulai belajar, aku boleh tau nama panggilan kamu siapa?")
+        st.markdown("Halo! Aku **ERAI**, tutor sebaya kamu. Sebelum kita mulai, nama panggilan kamu siapa?")
     
     if name_input := st.chat_input("Masukkan nama kamu..."):
         st.session_state.user_name = name_input
-        st.session_state.messages.append({"role": "assistant", "content": f"Salam kenal, {name_input}! Senang banget bisa bantu kamu belajar hari ini. Ada materi yang mau kita bahas bareng?"})
+        st.session_state.messages.append({"role": "assistant", "content": f"Salam kenal, {name_input}! Mau bahas materi apa kita hari ini?"})
         st.rerun()
 else:
-    # Tampilkan riwayat chat
+    # Tampilkan riwayat chat dengan render matematika
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
-            st.markdown(message["content"])
+            st.markdown(render_math_content(message["content"]))
 
     # --- LOGIKA CHAT UTAMA ---
     if prompt := st.chat_input(f"Tanya apa hari ini, {st.session_state.user_name}?"):
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
-            st.markdown(prompt)
+            st.markdown(render_math_content(prompt))
 
         with st.chat_message("assistant"):
-            # Update Instruksi ERAI: Informatif, Matematika Rapih, & Personal
+            # Update Instruksi ERAI: Paksa pakai format $...$
             system_prompt = (
-                f"Nama kamu ERAI. Kamu tutor sebaya standar WUG yang asik buat {st.session_state.user_name}. "
-                f"Gaya bicara santai (aku-kamu) dan sangat suportif. "
-                f"Tugasmu: JANGAN pelit jawaban, tapi JANGAN kasih hasil akhir langsung. "
-                f"1. Jelaskan konsep atau rumus yang digunakan secara jelas. "
-                f"2. WAJIB gunakan format LaTeX untuk matematika agar rapi (Contoh: $x^2$ atau $\\frac{{a}}{{b}}$). "
-                f"3. Berikan contoh pengerjaan atau langkah awal. "
-                f"4. Ajak {st.session_state.user_name} untuk mencoba menyelesaikan langkah terakhirnya sendiri."
+                f"Nama kamu ERAI. Kamu tutor sebaya standar WUG untuk {st.session_state.user_name}. "
+                "Gunakan bahasa santai (aku-kamu). "
+                "WAJIB: Gunakan simbol '$' untuk semua rumus matematika. "
+                "Contoh: tulis $x^2$ bukan x^2. Tulis $\\frac{a}{b}$ untuk pecahan. "
+                "Jangan hanya kasih jawaban, jelaskan langkahnya secara asik."
             )
             
-            # Gabungkan memori untuk dikirim ke AI
             full_messages = [{"role": "system", "content": system_prompt}] + \
                             [{"role": m["role"], "content": m["content"]} for m in st.session_state.messages]
             
@@ -69,7 +75,8 @@ else:
                 )
                 
                 response = completion.choices[0].message.content
-                st.markdown(response)
+                # Render langsung saat membalas
+                st.markdown(render_math_content(response))
                 st.session_state.messages.append({"role": "assistant", "content": response})
             except Exception as e:
-                st.error(f"Aduh, ada gangguan teknis: {e}")
+                st.error(f"Error: {e}")
