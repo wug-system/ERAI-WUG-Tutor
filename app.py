@@ -2,6 +2,16 @@ import streamlit as st
 from groq import Groq
 import re
 
+# MANTRA PENGHILANG WATERMARK (WUG Standard)
+hide_st_style = """
+            <style>
+            #MainMenu {visibility: hidden;}
+            footer {visibility: hidden;}
+            header {visibility: hidden;}
+            </style>
+            """
+st.markdown(hide_st_style, unsafe_allow_html=True)
+
 # --- KONFIGURASI HALAMAN ---
 st.set_page_config(page_title="ERAI - WUG Tutor", page_icon="🎓")
 
